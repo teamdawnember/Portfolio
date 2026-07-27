@@ -88,7 +88,13 @@ function ProjectRow({ name, category, description, deliverables, shot, flip, obj
       <a href="#contact" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: '#F8ECE0', fontWeight: 600, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 26 }}>
         View project
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={orange} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12" filter="url(#deInk)" /><polyline points="12 5 19 12 12 19" filter="url(#deInk)" />
+          {/* Filter on the <g>, not the individual shapes: the horizontal
+              shaft <line> alone has a zero-height bbox, which makes an
+              objectBoundingBox filter region degenerate and hides it. The
+              group's bbox includes the arrowhead, so it's non-degenerate. */}
+          <g filter="url(#deInk)">
+            <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+          </g>
         </svg>
       </a>
     </div>

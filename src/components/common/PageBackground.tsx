@@ -138,41 +138,39 @@ export default function PageBackground() {
                 left: item.left,
                 right: item.right,
               };
+              /* Parallax lives on the OUTER wrapper (data-depth → inline
+                 translate3d), the hover shake/spin animation on the INNER
+                 element. Keeping them on separate elements stops the running
+                 CSS animation from overriding the inline parallax transform
+                 (which made hovered motifs jump to translate(0)). */
               if (item.type === 'letter') {
                 if (!fontReady) return null;
                 return (
-                  <span
-                    key={i}
-                    data-depth={item.depth}
-                    className="bg-letter"
-                    style={{
-                      ...pos,
-                      fontSize: responsiveSize(item.size),
-                      lineHeight: 1,
-                      opacity: item.opacity,
-                      userSelect: 'none',
-                      pointerEvents: 'auto',
-                      cursor: 'default',
-                      willChange: 'transform',
-                    }}
-                  >{item.char}</span>
+                  <span key={i} data-depth={item.depth} style={{ ...pos, willChange: 'transform' }}>
+                    <span
+                      className="bg-letter"
+                      style={{
+                        display: 'inline-block',
+                        fontSize: responsiveSize(item.size),
+                        lineHeight: 1,
+                        opacity: item.opacity,
+                        userSelect: 'none',
+                        pointerEvents: 'auto',
+                        cursor: 'default',
+                      }}
+                    >{item.char}</span>
+                  </span>
                 );
               }
               if (item.type === 'kolam') {
                 return (
-                  <div
-                    key={i}
-                    data-depth={item.depth}
-                    className="bg-kolam"
-                    style={{
-                      ...pos,
-                      transformOrigin: '50% 50%',
-                      pointerEvents: 'auto',
-                      cursor: 'default',
-                      willChange: 'transform',
-                    }}
-                  >
-                    <img src={item.src} alt="" style={{ width: responsiveSize(item.size), height: responsiveSize(item.size), objectFit: 'contain', opacity: item.opacity, display: 'block' }} />
+                  <div key={i} data-depth={item.depth} style={{ ...pos, willChange: 'transform' }}>
+                    <div
+                      className="bg-kolam"
+                      style={{ transformOrigin: '50% 50%', pointerEvents: 'auto', cursor: 'default' }}
+                    >
+                      <img src={item.src} alt="" style={{ width: responsiveSize(item.size), height: responsiveSize(item.size), objectFit: 'contain', opacity: item.opacity, display: 'block' }} />
+                    </div>
                   </div>
                 );
               }
@@ -182,7 +180,7 @@ export default function PageBackground() {
                   data-depth={item.depth}
                   style={{
                     ...pos,
-                    display: 'inline-block', width: item.size, height: item.size, borderRadius: '50%',
+                    display: 'inline-block', width: responsiveSize(item.size), height: responsiveSize(item.size), borderRadius: '50%',
                     background: ORANGE, opacity: item.opacity, willChange: 'transform',
                   }}
                 />

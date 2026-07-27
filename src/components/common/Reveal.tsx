@@ -9,6 +9,9 @@ export function useRevealOnScroll<T extends HTMLElement>(threshold = 0.15) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Fallback: if IntersectionObserver is unavailable, reveal immediately so
+    // the wrapped content is never left permanently hidden at opacity 0.
+    if (typeof IntersectionObserver === 'undefined') { setVisible(true); return; }
     const io = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setVisible(true); io.disconnect(); } },
       { threshold }

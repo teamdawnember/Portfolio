@@ -107,7 +107,12 @@ function NotebookRow({ idx, page, active, onActivate }: {
   return (
     <div ref={ref}>
       <div
-        onClick={onActivate}
+        /* Activate immediately for feedback, then scroll this row to the
+           viewport centre so the IntersectionObserver's centre band agrees
+           with the click — otherwise the observer would re-fire on the
+           click-induced layout shift and snap active back to whatever row
+           is currently centred. */
+        onClick={() => { onActivate(); ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
         style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '18px clamp(16px,4vw,32px)', cursor: 'pointer' }}
       >
         <span style={{ fontFamily: "'Poppins',sans-serif", fontWeight: 600, fontSize: 12, color: active ? orange : '#8A7360', flex: '0 0 auto', width: 20 }}>
