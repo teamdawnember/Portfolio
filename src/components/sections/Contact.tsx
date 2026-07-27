@@ -96,8 +96,9 @@ const socialLinks = [
 
 const infoItems = [
   { icon: icons.mail,   label: 'Email us', lines: ['hello@dawnember.in'] },
-  { icon: icons.phone,  label: 'Call us',  lines: ['+91 12345 67890'] },
+  { icon: icons.phone,  label: 'Call us',  lines: ['+91 72002 05455'] },
 ];
+
 
 const fieldStyle: React.CSSProperties = {
   width: '100%', background: 'transparent', border: 'none',
@@ -119,13 +120,42 @@ const RoughField = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-export default function Contact() {
-  const [form, setForm] = useState({ name: '', phone: '', email: '', message: '' });
+// Base URL of the contact API. Empty by default → relative /api/contact, which
+// works via the Vite dev proxy and when the API is served same-origin in prod.
+// Set VITE_API_BASE only if the API lives on a different origin.
+const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
-  const onSubmit = (e: React.FormEvent) => {
+type SendStatus = 'idle' | 'sending' | 'sent' | 'error';
+
+export default function Contact() {
+  // `company` is a honeypot — hidden from users, only bots fill it.
+  const [form, setForm] = useState({ name: '', phone: '', email: '', message: '', company: '' });
+  const [status, setStatus] = useState<SendStatus>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const body = encodeURIComponent(`${form.message}\n\nFrom, ${form.name} (${form.email}, ${form.phone})`);
-    window.location.href = `mailto:hello@dawnember.in?subject=${encodeURIComponent(`Message from ${form.name || 'website'}`)}&body=${body}`;
+    if (status === 'sending') return;
+    setStatus('sending');
+    setErrorMsg('');
+    try {
+      const res = await fetch(`${API_BASE}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        setStatus('sent');
+        setForm({ name: '', phone: '', email: '', message: '', company: '' });
+      } else {
+        setStatus('error');
+        setErrorMsg(data.error || 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setStatus('error');
+      setErrorMsg('Network error — please try again, or email us at hello@dawnember.in.');
+    }
   };
 
   return (
@@ -200,6 +230,12 @@ export default function Contact() {
 
           {/* Form — every field gets a hand-drawn wobbly border */}
           <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, gridArea: 'form' }}>
+            {/* Honeypot — hidden from people; bots that fill it are dropped server-side. */}
+            <input
+              type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true"
+              value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
+              style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+            />
             <RoughField>
               <input
                 type="text" placeholder="Your name" required
@@ -230,25 +266,43 @@ export default function Contact() {
             </RoughField>
 
             {/* Rough hand-painted pill — double outline like a sketched button */}
-            <button type="submit" style={{
+            <button type="submit" disabled={status === 'sending'} style={{
               position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 12,
               background: orange, color: '#fff', fontWeight: 600, fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase',
               padding: '15px 26px', borderRadius: 999, boxShadow: '0 14px 30px -10px rgba(173,79,46,0.7)',
-              border: 'none', cursor: 'pointer', marginTop: 4,
+              border: 'none', cursor: status === 'sending' ? 'default' : 'pointer', marginTop: 4,
+              opacity: status === 'sending' ? 0.75 : 1, transition: 'opacity .2s ease',
             }}>
               <span style={{
                 position: 'absolute', inset: -4, borderRadius: 999,
                 border: '1.5px solid rgba(230,200,172,0.55)',
                 filter: 'url(#deRough)', pointerEvents: 'none',
               }} />
-              Send message
+              {status === 'sending' ? 'Sending…' : status === 'sent' ? 'Message sent' : 'Send message'}
               {/* Same hand-drawn deInk stroke used for the hero CTA's
                   down-chevron, so every arrow on the site reads sketched
                   rather than a clean vector line. */}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12" filter="url(#deInk)" /><polyline points="12 5 19 12 12 19" filter="url(#deInk)" />
+                {/* Filter on the <g>, not the shapes: the horizontal shaft
+                    <line> alone has a zero-height bbox, which makes the
+                    objectBoundingBox filter region degenerate and hides it. */}
+                <g filter="url(#deInk)">
+                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                </g>
               </svg>
             </button>
+
+            {/* Live send status — polite so screen readers announce it. */}
+            <div aria-live="polite" style={{ minHeight: 20 }}>
+              {status === 'sent' && (
+                <span style={{ fontSize: 13.5, color: '#8FBF8A' }}>
+                  Thanks — your message is on its way. We'll be in touch soon.
+                </span>
+              )}
+              {status === 'error' && (
+                <span style={{ fontSize: 13.5, color: '#E08A6E' }}>{errorMsg}</span>
+              )}
+            </div>
           </form>
 
           {/* Coffee art */}
