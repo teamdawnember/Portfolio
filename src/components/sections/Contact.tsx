@@ -3,6 +3,7 @@ import { InkDivider, DrawLine } from '../common/TornPaperCard';
 import { Reveal } from '../common/Reveal';
 import coffeeImg from '../../assets/images/coffe 1.png';
 import favicon2 from '../../assets/images/Favicon 2.svg';
+import { sendThnx } from '../../mail';
 
 const orange = '#AD4F2E';
 const pad = 'clamp(28px,5cqw,60px)';
@@ -120,10 +121,6 @@ const RoughField = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-// Base URL of the contact API. Empty by default → relative /api/contact, which
-// works via the Vite dev proxy and when the API is served same-origin in prod.
-// Set VITE_API_BASE only if the API lives on a different origin.
-const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
 type SendStatus = 'idle' | 'sending' | 'sent' | 'error';
 
@@ -138,23 +135,27 @@ export default function Contact() {
     if (status === 'sending') return;
     setStatus('sending');
     setErrorMsg('');
+
+    // Honeypot check: if filled, treat as success silently (drop bots)
+    if (form.company.trim()) {
+      setStatus('sent');
+      setForm({ name: '', phone: '', email: '', message: '', company: '' });
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/api/contact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+      await sendThnx({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        message: form.message,
       });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.ok) {
-        setStatus('sent');
-        setForm({ name: '', phone: '', email: '', message: '', company: '' });
-      } else {
-        setStatus('error');
-        setErrorMsg(data.error || 'Something went wrong. Please try again.');
-      }
-    } catch {
+      setStatus('sent');
+      setForm({ name: '', phone: '', email: '', message: '', company: '' });
+    } catch (error) {
+      console.error('Email sending failed:', error);
       setStatus('error');
-      setErrorMsg('Network error — please try again, or email us at hello@dawnember.in.');
+      setErrorMsg('Failed to send message. Please try again, or email us at hello@dawnember.in.');
     }
   };
 

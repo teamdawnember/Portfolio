@@ -1,5 +1,3 @@
-import anbazhaganShot from '../../assets/images/Dr. Anbazhagan Website Desktop.png';
-import sgeShot from '../../assets/images/SGE Website Desktop.png';
 import { Reveal } from '../common/Reveal';
 
 const orange = '#AD4F2E';
@@ -59,13 +57,14 @@ const LeafSprig = ({ flip = false }: { flip?: boolean }) => (
 interface Project {
   name: string; category: string;
   description: string; deliverables: string; shot: string;
+  href?: string; // live project URL; falls back to the contact section if unset
   objectPosition?: string;
   fillWidth?: boolean;
 }
 
 interface ProjectRowProps extends Project { flip?: boolean; }
 
-function ProjectRow({ name, category, description, deliverables, shot, flip, objectPosition, fillWidth }: ProjectRowProps) {
+function ProjectRow({ name, category, description, deliverables, shot, href, flip, objectPosition, fillWidth }: ProjectRowProps) {
   const media = (
     <div key="media" style={{ position: 'relative', display: 'flex', justifyContent: 'center', padding: '30px 10px' }}>
       <Blob />
@@ -85,7 +84,12 @@ function ProjectRow({ name, category, description, deliverables, shot, flip, obj
         <div style={{ fontSize: 13, fontWeight: 700, color: orange, textTransform: 'uppercase', letterSpacing: '0.08em' }}>What we did</div>
         <div style={{ fontSize: 14.5, color: '#C4A882', marginTop: 6 }}>{deliverables}</div>
       </div>
-      <a href="#contact" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: '#F8ECE0', fontWeight: 600, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 26 }}>
+      <a
+        href={href || '#contact'}
+        target={href ? '_blank' : undefined}
+        rel={href ? 'noopener noreferrer' : undefined}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: '#F8ECE0', fontWeight: 600, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 26 }}
+      >
         View project
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={orange} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           {/* Filter on the <g>, not the individual shapes: the horizontal
@@ -116,16 +120,18 @@ const projects: Project[] = [
   {
     name: 'Dr. K. V. Anbazhagan',
     category: 'Legacy Website',
+    href: 'https://drkva.com/',
     description: 'A tribute website celebrating 70 years of Dr. K. V. Anbazhagan, a life of healing, love, and service.',
     deliverables: 'Web Design, Development',
-    shot: anbazhaganShot,
+    shot: 'https://pub-ebe4b471ad7b4bf8b2fd0a3a59474634.r2.dev/Website/Dr.%20Anbazhagan%20Website%20Desktop.png',
   },
   {
     name: 'SGE Air Compressors',
     category: 'Industrial Website',
+    href: 'https://sg-virid-ten.vercel.app/',
     description: 'A decade of building compressors out of Coimbatore, a catalogue-driven site for an industrial manufacturer.',
     deliverables: 'Web Design, Development, SEO',
-    shot: sgeShot,
+    shot: 'https://pub-ebe4b471ad7b4bf8b2fd0a3a59474634.r2.dev/Website/SGE%20Website%20Desktop.png',
     fillWidth: true,
   },
 ];
