@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme/theme';
@@ -14,6 +15,37 @@ import SparkFactor from './components/sections/SparkFactor';
 import Contact from './components/sections/Contact';
 
 export default function App() {
+  // Scroll-spy: keep the URL hash in sync with the section in view, so the
+  // address bar reflects where you actually are (e.g. #contact once you reach
+  // Contact) instead of staying on whatever nav link was last clicked.
+  // replaceState is used so it neither scrolls the page nor floods history.
+  useEffect(() => {
+    const sections = ['home', 'work', 'about', 'contact']
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (!sections.length) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const hash = `#${entry.target.id}`;
+            if (window.location.hash !== hash) {
+              history.replaceState(null, '', hash);
+            }
+          }
+        }
+      },
+      // A thin band in the upper third of the viewport is the "active" zone —
+      // whichever section is crossing it owns the hash. Sitting it higher than
+      // dead-centre lets the first section (#home) register at the top of the
+      // page, where its centre can never reach the middle.
+      { rootMargin: '-30% 0px -65% 0px', threshold: 0 },
+    );
+    sections.forEach((s) => io.observe(s));
+    return () => io.disconnect();
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
