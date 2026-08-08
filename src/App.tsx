@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme/theme';
@@ -6,6 +6,7 @@ import SVGFilters from './components/common/SVGFilters';
 import PageBackground from './components/common/PageBackground';
 import TornPaperCard from './components/common/TornPaperCard';
 import ScrollFab from './components/common/ScrollFab';
+import Loader from './components/common/Loader';
 import logoIcon from './assets/images/Logo Mark.svg';
 import QuickNav from './components/sections/QuickNav';
 import Hero from './components/sections/Hero';
@@ -15,6 +16,37 @@ import SparkFactor from './components/sections/SparkFactor';
 import Contact from './components/sections/Contact';
 
 export default function App() {
+  const [ready, setReady] = useState(false);
+
+  // Hold the loader until the page's assets (images, fonts, everything the
+  // window "load" event waits for) have finished — with a minimum display
+  // time so it doesn't flash, and an 8s safety fallback so a slow/broken
+  // asset can never trap the visitor on the loader.
+  useEffect(() => {
+    const MIN_MS = 600;
+    const started = Date.now();
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      const wait = Math.max(0, MIN_MS - (Date.now() - started));
+      window.setTimeout(() => setReady(true), wait);
+    };
+    if (document.readyState === 'complete') finish();
+    else window.addEventListener('load', finish, { once: true });
+    const fallback = window.setTimeout(finish, 8000);
+    return () => {
+      window.removeEventListener('load', finish);
+      window.clearTimeout(fallback);
+    };
+  }, []);
+
+  // Lock page scroll while the loader is covering the screen.
+  useEffect(() => {
+    document.body.style.overflow = ready ? '' : 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [ready]);
+
   // Scroll-spy: keep the URL hash in sync with the section in view, so the
   // address bar reflects where you actually are (e.g. #contact once you reach
   // Contact) instead of staying on whatever nav link was last clicked.
@@ -49,12 +81,17 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <Loader done={ready} />
       <SVGFilters />
       <PageBackground />
       <ScrollFab />
 
-      {/* Scrollable content */}
-      <div style={{ position: 'relative', zIndex: 3, paddingBottom: 64 }}>
+      {/* Scrollable content. overflowX:clip trims the torn-paper card's edge
+          overlays (which extend ~100px beyond the card) at the viewport edge,
+          so they never cause horizontal scroll on narrow screens. `clip`
+          (not hidden) keeps vertical scroll normal and creates no scroll
+          container. */}
+      <div style={{ position: 'relative', zIndex: 3, paddingBottom: 64, overflowX: 'clip' }}>
         {/* Brand mark — on cream background, centred above the card. zIndex 4
             keeps it above the card (zIndex 3) so the torn-paper top edge's cream
             overlay can't paint over the wordmark. */}
