@@ -5,6 +5,7 @@ import kolam2 from '../../assets/images/Kolam 2.png';
 import { Reveal } from '../common/Reveal';
 import { DrawLine } from '../common/TornPaperCard';
 
+
 const orange = '#AD4F2E';
 const pad = 'clamp(28px,5cqw,60px)';
 

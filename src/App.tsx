@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme/theme';
@@ -6,6 +6,7 @@ import SVGFilters from './components/common/SVGFilters';
 import PageBackground from './components/common/PageBackground';
 import TornPaperCard from './components/common/TornPaperCard';
 import ScrollFab from './components/common/ScrollFab';
+import Loader from './components/common/Loader';
 import logoIcon from './assets/images/Logo Mark.svg';
 import QuickNav from './components/sections/QuickNav';
 import Hero from './components/sections/Hero';
@@ -15,46 +16,80 @@ import SparkFactor from './components/sections/SparkFactor';
 import Contact from './components/sections/Contact';
 
 export default function App() {
-  // Scroll-spy: keep the URL hash in sync with the section in view, so the
-  // address bar reflects where you actually are (e.g. #contact once you reach
-  // Contact) instead of staying on whatever nav link was last clicked.
-  // replaceState is used so it neither scrolls the page nor floods history.
-  useEffect(() => {
-    const sections = ['home', 'work', 'about', 'contact']
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!sections.length) return;
+  const [ready, setReady] = useState(false);
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const hash = `#${entry.target.id}`;
-            if (window.location.hash !== hash) {
-              history.replaceState(null, '', hash);
-            }
-          }
-        }
-      },
-      // A thin band in the upper third of the viewport is the "active" zone —
-      // whichever section is crossing it owns the hash. Sitting it higher than
-      // dead-centre lets the first section (#home) register at the top of the
-      // page, where its centre can never reach the middle.
-      { rootMargin: '-30% 0px -65% 0px', threshold: 0 },
-    );
-    sections.forEach((s) => io.observe(s));
-    return () => io.disconnect();
+  // Hold the loader until the page's assets (images, fonts, everything the
+  // window "load" event waits for) have finished — with a minimum display
+  // time so it doesn't flash, and an 8s safety fallback so a slow/broken
+  // asset can never trap the visitor on the loader.
+  useEffect(() => {
+    const MIN_MS = 600;
+    const started = Date.now();
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      const wait = Math.max(0, MIN_MS - (Date.now() - started));
+      window.setTimeout(() => setReady(true), wait);
+    };
+    if (document.readyState === 'complete') finish();
+    else window.addEventListener('load', finish, { once: true });
+    const fallback = window.setTimeout(finish, 8000);
+    return () => {
+      window.removeEventListener('load', finish);
+      window.clearTimeout(fallback);
+    };
+  }, []);
+
+  // Lock page scroll while the loader is covering the screen.
+  useEffect(() => {
+    document.body.style.overflow = ready ? '' : 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [ready]);
+
+  // Keep the address bar clean. In-page anchor clicks are intercepted BEFORE
+  // the browser can write the #hash to the URL — we preventDefault and run the
+  // smooth scroll ourselves (scrollIntoView honours the sections'
+  // scroll-margin-top), so the hash never appears, not even for a moment.
+  // A scroll fallback still strips a hash that arrives via a direct link
+  // (e.g. someone opening dawnember.in/#work).
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element).closest?.('a[href^="#"]');
+      if (!a) return;
+      const el = document.getElementById(a.getAttribute('href')!.slice(1));
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const clearHash = () => {
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    document.addEventListener('click', onClick);
+    window.addEventListener('scroll', clearHash, { passive: true });
+    return () => {
+      document.removeEventListener('click', onClick);
+      window.removeEventListener('scroll', clearHash);
+    };
   }, []);
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <Loader done={ready} />
       <SVGFilters />
       <PageBackground />
       <ScrollFab />
 
-      {/* Scrollable content */}
-      <div style={{ position: 'relative', zIndex: 3, paddingBottom: 64 }}>
+      {/* Scrollable content. overflowX:clip trims the torn-paper card's edge
+          overlays (which extend ~100px beyond the card) at the viewport edge,
+          so they never cause horizontal scroll on narrow screens. `clip`
+          (not hidden) keeps vertical scroll normal and creates no scroll
+          container. */}
+      <div style={{ position: 'relative', zIndex: 3, paddingBottom: 64, overflowX: 'clip' }}>
         {/* Brand mark — on cream background, centred above the card. zIndex 4
             keeps it above the card (zIndex 3) so the torn-paper top edge's cream
             overlay can't paint over the wordmark. */}
