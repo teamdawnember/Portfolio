@@ -47,35 +47,33 @@ export default function App() {
     return () => { document.body.style.overflow = ''; };
   }, [ready]);
 
-  // Scroll-spy: keep the URL hash in sync with the section in view, so the
-  // address bar reflects where you actually are (e.g. #contact once you reach
-  // Contact) instead of staying on whatever nav link was last clicked.
-  // replaceState is used so it neither scrolls the page nor floods history.
+  // Keep the address bar clean. In-page anchor clicks are intercepted BEFORE
+  // the browser can write the #hash to the URL — we preventDefault and run the
+  // smooth scroll ourselves (scrollIntoView honours the sections'
+  // scroll-margin-top), so the hash never appears, not even for a moment.
+  // A scroll fallback still strips a hash that arrives via a direct link
+  // (e.g. someone opening dawnember.in/#work).
   useEffect(() => {
-    const sections = ['home', 'work', 'about', 'contact']
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!sections.length) return;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const hash = `#${entry.target.id}`;
-            if (window.location.hash !== hash) {
-              history.replaceState(null, '', hash);
-            }
-          }
-        }
-      },
-      // A thin band in the upper third of the viewport is the "active" zone —
-      // whichever section is crossing it owns the hash. Sitting it higher than
-      // dead-centre lets the first section (#home) register at the top of the
-      // page, where its centre can never reach the middle.
-      { rootMargin: '-30% 0px -65% 0px', threshold: 0 },
-    );
-    sections.forEach((s) => io.observe(s));
-    return () => io.disconnect();
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element).closest?.('a[href^="#"]');
+      if (!a) return;
+      const el = document.getElementById(a.getAttribute('href')!.slice(1));
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const clearHash = () => {
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    document.addEventListener('click', onClick);
+    window.addEventListener('scroll', clearHash, { passive: true });
+    return () => {
+      document.removeEventListener('click', onClick);
+      window.removeEventListener('scroll', clearHash);
+    };
   }, []);
 
   return (
