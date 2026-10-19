@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { InkDivider, DrawLine } from '../common/TornPaperCard';
+import { DrawLine } from '../common/TornPaperCard';
 import { Reveal } from '../common/Reveal';
+import Footer from '../common/Footer';
 import coffeeImg from '../../assets/images/coffe 1.png';
-import favicon2 from '../../assets/images/Favicon 2.svg';
 import { sendThnx } from '../../mail';
 
 const orange = '#AD4F2E';
@@ -129,10 +129,14 @@ export default function Contact() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', message: '', company: '' });
   const [status, setStatus] = useState<SendStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  // DPDP consent — Send stays locked until the visitor ticks the notice.
+  const [consent, setConsent] = useState(false);
+  const [showConsentInfo, setShowConsentInfo] = useState(false);
+  const canSend = consent && status !== 'sending';
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (status === 'sending') return;
+    if (!canSend) return;
     setStatus('sending');
     setErrorMsg('');
 
@@ -140,6 +144,7 @@ export default function Contact() {
     if (form.company.trim()) {
       setStatus('sent');
       setForm({ name: '', phone: '', email: '', message: '', company: '' });
+      setConsent(false);
       return;
     }
 
@@ -152,6 +157,7 @@ export default function Contact() {
       });
       setStatus('sent');
       setForm({ name: '', phone: '', email: '', message: '', company: '' });
+      setConsent(false);
     } catch (error) {
       console.error('Email sending failed:', error);
       setStatus('error');
@@ -266,13 +272,51 @@ export default function Contact() {
               />
             </RoughField>
 
+            {/* DPDP consent notice — one-line summary, full details behind
+                "See more". The toggle sits outside the <label> so clicking it
+                never ticks the checkbox. */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12.5, lineHeight: 1.55, color: '#C4A882' }}>
+              <input
+                id="dn-consent" type="checkbox" required
+                checked={consent} onChange={e => setConsent(e.target.checked)}
+                style={{ flex: '0 0 auto', width: 16, height: 16, marginTop: 2, accentColor: orange, cursor: 'pointer' }}
+              />
+              <div>
+                <label htmlFor="dn-consent" style={{ cursor: 'pointer' }}>
+                  I agree DawnEmber may use my details only to reply to this enquiry.
+                </label>{' '}
+                <button
+                  type="button" aria-expanded={showConsentInfo} aria-controls="dn-consent-info"
+                  onClick={() => setShowConsentInfo(v => !v)}
+                  style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: '#E6C8AC', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  {showConsentInfo ? 'See less' : 'See more'}
+                </button>
+                {showConsentInfo && (
+                  <ul id="dn-consent-info" style={{ margin: '8px 0 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <li>We collect your name, mobile number, email and message.</li>
+                    <li>We use them only to respond to your enquiry. No marketing, no selling, no sharing beyond the services that deliver our email.</li>
+                    <li>We delete enquiry details once they're no longer needed.</li>
+                    <li>
+                      To see, correct or delete your details, withdraw consent, or raise a complaint, email{' '}
+                      <a href="mailto:hello@dawnember.in" style={{ color: '#E6C8AC' }}>hello@dawnember.in</a>.
+                    </li>
+                    <li>
+                      Full details in our{' '}
+                      <a href="/privacy/" target="_blank" rel="noopener" style={{ color: '#E6C8AC' }}>Privacy Policy</a>.
+                    </li>
+                  </ul>
+                )}
+              </div>
+            </div>
+
             {/* Rough hand-painted pill — double outline like a sketched button */}
-            <button type="submit" disabled={status === 'sending'} style={{
+            <button type="submit" disabled={!canSend} style={{
               position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 12,
               background: orange, color: '#fff', fontWeight: 600, fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase',
               padding: '15px 26px', borderRadius: 999, boxShadow: '0 14px 30px -10px rgba(173,79,46,0.7)',
-              border: 'none', cursor: status === 'sending' ? 'default' : 'pointer', marginTop: 4,
-              opacity: status === 'sending' ? 0.75 : 1, transition: 'opacity .2s ease',
+              border: 'none', cursor: canSend ? 'pointer' : 'not-allowed', marginTop: 4,
+              opacity: canSend ? 1 : 0.5, transition: 'opacity .2s ease',
             }}>
               <span style={{
                 position: 'absolute', inset: -4, borderRadius: 999,
@@ -327,17 +371,7 @@ export default function Contact() {
           </Reveal>
         </div>
 
-        {/* Footer bar */}
-        <div style={{ marginTop: 46, paddingTop: 30, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
-          <InkDivider style={{ position: 'absolute', top: 0, left: 0, right: 0 }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src={favicon2} alt="" style={{ width: 26, height: 26, objectFit: 'contain', display: 'block' }} />
-            <span style={{ fontFamily: "'Poppins',sans-serif", fontWeight: 600, fontSize: 15, color: '#F8ECE0' }}>DawnEmber</span>
-          </div>
-          <div style={{ fontSize: 12.5, color: '#9A8468', letterSpacing: '0.04em' }}>
-            Made with <span style={{ color: orange }}>&#9829;</span> by Anbu &amp; Aswin &nbsp;·&nbsp; © 2025 Dawn Ember
-          </div>
-        </div>
+        <Footer />
       </section>
     </>
   );
