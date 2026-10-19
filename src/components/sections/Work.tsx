@@ -1,4 +1,5 @@
 import { Reveal } from '../common/Reveal';
+import dawnEyeShot from '../../assets/images/dawn-eye-center-desktop.png';
 
 const orange = '#AD4F2E';
 const pad = 'clamp(28px,5cqw,60px)';
@@ -133,6 +134,14 @@ const projects: Project[] = [
     deliverables: 'Web Design, Development, SEO',
     shot: 'https://pub-ebe4b471ad7b4bf8b2fd0a3a59474634.r2.dev/Website/SGE%20Website%20Desktop.png',
     fillWidth: true,
+  },
+  {
+    name: 'Dawn Eye Center',
+    category: 'Healthcare Website',
+    href: 'https://dawn-eye-center.vercel.app/',
+    description: 'A specialist eye care site for two Chennai centres, with online booking and a quick vision self-check for patients.',
+    deliverables: 'Web Design, Development',
+    shot: dawnEyeShot,
   },
 ];
 
